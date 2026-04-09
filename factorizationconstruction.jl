@@ -12,10 +12,10 @@ end
 function power_series_kron(p1, p2)
     power1 = length(p1) - 1 # First element of p1 is eps^0
     power2 = length(p2) - 1
-    power = max(power1, power2) # Later elements are discarded as O(eps^(power + 1))
+    power = power1 + power2 # Later elements are discarded as O(eps^(power + 1))
     [
         sum(
-            kron(power1[i + 1], power2[current_power - i + 1]) for i in 0:current_power
+            kron(p1[i + 1], p2[current_power - i + 1]) for i in max(0, current_power - power2):min(power1, current_power), dims=1
         ) for current_power in 0:power
     ]
 end
@@ -24,7 +24,7 @@ export square_up
 
 """Given a factorization of <m, n, k> in power series from K[eps], produce a factorization of <mnk, mnk, mnk>."""
 function square_up(alphas, betas, gammas)
-    pslk(l1, l2, l3) = [power_series_kron(power_series_kron(x, y), z) for x in eachslice(l1, dims=1) for y in eachslice(l2, dims=1) for z in eachslice(l3, dims=1)]
+    pslk(l1, l2, l3) = [power_series_kron(power_series_kron(x[1], y[1]), z[1]) for x in eachslice(l1, dims=1) for y in eachslice(l2, dims=1) for z in eachslice(l3, dims=1)]
     pslk(alphas, betas, gammas), pslk(betas, gammas, alphas), pslk(gammas, alphas, betas)
 end
 
@@ -47,11 +47,11 @@ export border_factorization_to_full_factorization
 """Given a vector `factors` of power series from K[eps], return a vector of factorizations with elements in K."""
 function border_factorization_to_full_factorization(factors)
     l = length(factors)
-    power = length(factors[0]) - 1
-    @assert all(f -> length(f) - 1 == power, factors)
-    partitions = partitions_of_length(power, l)
+    original_rk = length(factors[1])
+    power = length(factors[1][1])
+    partitions = partitions_of_length(power - 1, l)
     [
-        [factors[i][p[i] + 1] for p in partitions] for i in 1:l
+        [factors[i][r][p[i] + 1] for r in 1:original_rk for p in partitions] for i in 1:l
     ]
 end
 
