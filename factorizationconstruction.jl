@@ -20,26 +20,28 @@ function power_series_kron(p1, p2)
     ]
 end
 
+ps_tran = p -> (t -> transpose.(t)).(p) # Power series transpose
+
 export square_up
 
 """Given a factorization of <m, n, k> in power series from K[eps], produce a factorization of <mnk, mnk, mnk>."""
 function square_up(alphas, betas, gammas)
     pslk(l1, l2, l3) = [power_series_kron(power_series_kron(x[1], y[1]), z[1]) for x in eachslice(l1, dims=1) for y in eachslice(l2, dims=1) for z in eachslice(l3, dims=1)]
-    pslk(alphas, betas, gammas), pslk(betas, gammas, alphas), pslk(gammas, alphas, betas)
+    pslk(alphas, betas, ps_tran(gammas)), pslk(betas, ps_tran(gammas), alphas), pslk(gammas, ps_tran(alphas), ps_tran(betas))
 end
 
 export to_power
 
 """Given a factorization of <N, N, N> in power series from K[eps], produce a factorization of <N^s, N^s, N^s>."""
 function to_power(s, alphas, betas, gammas)
-    function _to_power_single(q)
+    function to_power_single(q)
         result = q
         for _ in 1:s
             result = power_series_kron(result, q)
         end
         result
     end
-    to_power_single(alphas), to_power_single(betas), to_power_single(gammas)
+    to_power_single.(alphas), to_power_single.(betas), to_power_single.(gammas)
 end
 
 export border_factorization_to_full_factorization
@@ -53,6 +55,13 @@ function border_factorization_to_full_factorization(factors)
     [
         [factors[i][r][p[i] + 1] for r in 1:original_rk for p in partitions] for i in 1:l
     ]
+end
+
+export vector_of_matrices_to_array
+
+function vector_of_matrices_to_array(vec)
+    sz = size(vec[1])
+    permutedims(reshape(reduce(hcat, vec), sz[1], sz[2], :), (3, 1, 2))
 end
 
 end

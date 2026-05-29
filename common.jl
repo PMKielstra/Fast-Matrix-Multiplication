@@ -28,9 +28,9 @@ end
 
 export test_multiply
 
-function test_multiply(multiplier, n1, n2)
-    A = rand(1:100, n1, n2)
-    B = rand(1:100, n2, n1)
+function test_multiply(multiplier, n)
+    A = rand(1:100, n, n)
+    B = rand(1:100, n, n)
     all(A * B == multiplier(A, B))
 end
 
