@@ -7,15 +7,30 @@ function two_by_four_dot(A, B)
     sz_B = size(B)
     A_reshaped = reshape(A, sz_A[1], sz_A[2] * sz_A[3])
     B_reshaped = vec(B)
-    reshape(A_reshaped * B_reshaped, sz_A[1])
+    function nonzero_sum(coeffs)
+        nonzeros = (coeffs .!= 0)
+        nonzero_coeffs = coeffs[nonzeros]
+        sum(nonzero_coeffs .* B_reshaped[nonzeros])
+    end
+    reshape(nonzero_sum.(eachrow(A_reshaped)), sz_A[1])
 end
 
 export matmul_from_factorization
+
+"""Given a list of arrays, returns a list of sub-arrays such that every slice in the first dimension of every array has some nonzero element."""
+function filter_nonzero(arrays)
+    function nonzero_indices(array)
+        any.(eachslice(array .!= 0, dims=1))
+    end
+    indices = foldl((p, q) -> p .&& q, nonzero_indices.(arrays))
+    (p -> p[indices, :, :]).(arrays)
+end
 
 """
 Builds a function to multiply a ``k \times m`` matrix and a ``m \times n`` one, given that ``<k, m, n> = \\sum_i \\alpha_i \\otimes \\beta_i \\otimes \\gamma_i``.
 """
 function matmul_from_factorization(alphas, betas, gammas)
+    alphas, betas, gammas = filter_nonzero((alphas, betas, gammas))
     function multiply(mul, A, B)
         dotted_As = two_by_four_dot(alphas, A)
         dotted_Bs = two_by_four_dot(betas, B)
