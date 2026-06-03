@@ -13,16 +13,35 @@ function split_2d(X, sz)
     [view(X, rr, cr) for rr in r_ranges, cr in c_ranges]
 end
 
+"""Pad matrix with zeros on the bottom and right so that it divides evenly into blocks of the given shape."""
+function pad_to_divisibility(matrix, shape)
+    mat_shape = size(matrix)
+    pad_rows = mod(-mat_shape[1], shape[1]) # Smallest amount to pad such that the dimension is a multiple of 
+    pad_cols = mod(-mat_shape[2], shape[2])
+
+    if pad_rows == 0 && pad_cols == 0
+        padded = matrix
+    else
+        padded = [matrix zeros(Int, mat_shape[1], pad_cols); zeros(Int, pad_rows, mat_shape[2]) zeros(Int, pad_rows, pad_cols)]
+    end
+    padded, pad_rows, pad_cols
+end
+
 export make_recursive_multiplier
 
-function make_recursive_multiplier(multiplier, A_shape, B_shape)
+function make_recursive_multiplier(multiplier, m, n, k)
+    A_shape = (m, n)
+    B_shape = (n, k)
     function rmul(A, B)
         if cannot_split(A, A_shape) || cannot_split(B, B_shape)
             return A * B
         end
-        next_A = split_2d(A, A_shape)
-        next_B = split_2d(B, B_shape)
-        multiplier(rmul, next_A, next_B)
+        padded_A, remove_x, _ = pad_to_divisibility(A, A_shape)
+        padded_B, _, remove_y = pad_to_divisibility(B, B_shape)
+        next_A = split_2d(padded_A, A_shape)
+        next_B = split_2d(padded_B, B_shape)
+        result = multiplier(rmul, next_A, next_B)
+        result[1:end-remove_x, 1:end-remove_y]
     end
 end
 
