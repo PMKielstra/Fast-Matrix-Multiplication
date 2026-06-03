@@ -22,7 +22,8 @@ function pad_to_divisibility(matrix, shape)
     if pad_rows == 0 && pad_cols == 0
         padded = matrix
     else
-        padded = [matrix zeros(Int, mat_shape[1], pad_cols); zeros(Int, pad_rows, mat_shape[2] + pad_cols)]
+        t = eltype(matrix)
+        padded = [matrix zeros(t, mat_shape[1], pad_cols); zeros(t, pad_rows, mat_shape[2] + pad_cols)]
     end
     padded, pad_rows, pad_cols
 end
